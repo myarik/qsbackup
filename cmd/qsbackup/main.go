@@ -1,9 +1,13 @@
 package main
 
 import (
-	"fmt"
+	log "github.com/myarik/qsbackup/pkg/logger"
+	"os"
 )
 
 func main()  {
-	fmt.Printf("Start\n")
+	logger := log.New(os.Stdout, 1)
+	logger.Debug("Test")
+	logger.Info("Test")
+
 }
