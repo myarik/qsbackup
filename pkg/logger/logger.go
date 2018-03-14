@@ -1,3 +1,17 @@
+/*
+Usage
+
+	import log "github.com/myarik/qsbackup/pkg/logger"
+
+	func main()  {
+		logger := log.New(os.Stdout, 0)
+		logger.Debug("Test") 		// 2018/03/14 18:11:34 [DEBUG]: Test
+		logger.Info("Test") 		// 2018/03/14 18:11:34 [WARNING]: Test
+		logger.Warning("Test")      // 2018/03/14 18:11:34 [WARNING]: Test
+		logger.Error("Test")        // 2018/03/14 18:11:34 [ERROR]: Test
+		logger.Critical("Panic")    // 2018/03/14 18:11:34 [CRITICAL]: Panic  A program crashes
+	}
+ */
 package logger
 
 import (
