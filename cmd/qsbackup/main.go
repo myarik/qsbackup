@@ -1,17 +1,20 @@
 package main
 
 import (
-	log "github.com/myarik/qsbackup/pkg/logger"
+	pkgLogger "github.com/myarik/qsbackup/pkg/logger"
 	"os"
-	"github.com/myarik/qsbackup/cmd/qsbackup/config"
+	"github.com/myarik/qsbackup/pkg/config"
+	"io/ioutil"
+	"log"
 )
 
-func main()  {
-
-	tc := &config.BackupConfig{
-		Name: "Test vasya",
+func main() {
+	filename := os.Args[1]
+	source, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatalf("Can't open configuration file: %s", filename)
 	}
-
-	logger := log.New(os.Stdout, 0)
-	logger.Debug(tc.Logfile)
+	conf := config.Load(source)
+	logger := pkgLogger.New(os.Stdout, 0)
+	logger.Debug(conf.Name)
 }
