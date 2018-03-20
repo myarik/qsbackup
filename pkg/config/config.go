@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/go-yaml/yaml"
+	"github.com/myarik/qsbackup/pkg/util/file"
 )
 
 // Config contains configuration information to do a backup
@@ -19,11 +20,20 @@ type Dir struct {
 	Path        string
 }
 
+func validatedConfig(c *BackupConfig) (*BackupConfig, error) {
+	for _, backupDir := range c.Dirs {
+		if exist, _ := file.IsExists(backupDir.Path); !exist {
+			return nil, fmt.Errorf("the directory %s does not exist\n", backupDir.Path)
+		}
+	}
+	return c, nil
+}
+
 func Load(input []byte) (*BackupConfig, error) {
 	var config BackupConfig
 
 	if err := yaml.Unmarshal(input, &config); err != nil {
-		return nil, fmt.Errorf("Can't parse the config file")
+		return nil, fmt.Errorf("can't parse the config file\n")
 	}
-	return &config, nil
+	return validatedConfig(&config)
 }

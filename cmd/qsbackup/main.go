@@ -17,7 +17,7 @@ func main() {
 	}
 	conf, err := config.Load(source)
 	if err != nil {
-		fmt.Printf("%s: %s\n", err, filename)
+		fmt.Printf("%s", err)
 		os.Exit(1)
 	}
 	logger := log.New(os.Stdout, 0)
