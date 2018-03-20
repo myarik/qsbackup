@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/go-yaml/yaml"
 	"fmt"
+	"github.com/go-yaml/yaml"
 )
 
 // Config contains configuration information to do a backup
