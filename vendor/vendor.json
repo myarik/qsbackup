@@ -1,0 +1,24 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "pS97XOjIrrQ7bKJTVK1LZ/FfUXY=",
+			"path": "github.com/go-yaml/yaml",
+			"revision": "7f97868eec74b32b0982dd158a51a446d1da7eb5",
+			"revisionTime": "2018-02-23T19:12:37Z",
+			"version": "v2",
+			"versionExact": "v2.1.1"
+		},
+		{
+			"path": "https://github.com/go-yaml/yaml",
+			"revision": "v2",
+			"version": "v2"
+		},
+		{
+			"path": "https://github.com/go-yaml/yaml.v2",
+			"revision": ""
+		}
+	],
+	"rootPath": "github.com/myarik/qsbackup"
+}

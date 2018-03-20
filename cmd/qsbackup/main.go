@@ -1,20 +1,25 @@
 package main
 
 import (
-	pkgLogger "github.com/myarik/qsbackup/pkg/logger"
+	log "github.com/myarik/qsbackup/pkg/logger"
 	"os"
 	"github.com/myarik/qsbackup/pkg/config"
 	"io/ioutil"
-	"log"
+	"fmt"
 )
 
 func main() {
 	filename := os.Args[1]
 	source, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatalf("Can't open configuration file: %s", filename)
+		fmt.Printf("Can't open configuration file: %s\n", filename)
+		os.Exit(1)
 	}
-	conf := config.Load(source)
-	logger := pkgLogger.New(os.Stdout, 0)
-	logger.Debug(conf.Name)
+	conf, err := config.Load(source)
+	if err != nil {
+		fmt.Printf("%s: %s\n", err, filename)
+		os.Exit(1)
+	}
+	logger := log.New(os.Stdout, 0)
+	logger.Debug(conf.Logfile)
 }
