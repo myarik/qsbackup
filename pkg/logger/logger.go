@@ -19,6 +19,8 @@ import (
 	"log"
 	"bytes"
 	"strings"
+	"os"
+	"io/ioutil"
 )
 
 const (
@@ -37,9 +39,14 @@ var logLevelName = [...]string{
 	"CRITICAL",
 }
 
+type CloseStdout interface {
+	Close() error
+}
+
 type Log struct {
-	logLevel int
-	logger   *log.Logger
+	logLevel        int
+	logger          *log.Logger
+	closableOutputs []CloseStdout
 }
 
 func New(out io.Writer, level int) *Log {
@@ -47,6 +54,27 @@ func New(out io.Writer, level int) *Log {
 		logLevel: level,
 		logger:   log.New(out, "", log.LstdFlags),
 	}
+}
+
+// Setup a logger
+func Init(logFile string, debugMode bool) (*Log, error) {
+	if logFile != "" {
+		fileStdout, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, err
+		}
+		var logger *Log
+		if debugMode == true {
+			logger = New(io.MultiWriter(fileStdout, os.Stdout), 0)
+		} else {
+			logger = New(fileStdout, 1)
+		}
+		logger.closableOutputs = append(logger.closableOutputs, fileStdout)
+		return logger, nil
+	} else if debugMode == true {
+		return New(os.Stdout, 0), nil
+	}
+	return New(ioutil.Discard, 1), nil
 }
 
 func (l Log) formatMessage(level, message string) string {
@@ -81,4 +109,11 @@ func (l Log) Error(message string) {
 }
 func (l Log) Critical(message string) {
 	l.log(CRITICAL, message)
+}
+
+func (l Log) Close() error {
+	for _, item := range l.closableOutputs {
+		item.Close()
+	}
+	return nil
 }
