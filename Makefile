@@ -6,7 +6,10 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 BINARY_NAME=qsbackup
 MAIN_PKG=github.com/myarik/qsbackup/cmd/qsbackup
-
+VERSION ?= vlatest
+PLATFORMS := linux darwin
+os = $(word 1, $@)
+CONF ?= /Users/yaroslavmuravskiy/Documents/test_backup/config.yml
 
 help: _help_
 
@@ -16,6 +19,7 @@ _help_:
 	@echo make clean -- clean
 	@echo make VERSION=v0.0.1 release -j2 -- build a release pkg with a version
 	@echo make release -j2 -- build a release pkg
+	@echo make CONF=/tmp/config.yml run
 
 
 .PHONY: test
@@ -30,10 +34,6 @@ clean:
 	rm -f $(BINARY_NAME)
 	rm -f rm -rf release/$(BINARY_NAME)-vlatest-*
 
-VERSION ?= vlatest
-PLATFORMS := linux darwin
-os = $(word 1, $@)
-
 .PHONY: $(PLATFORMS)
 $(PLATFORMS):
 	mkdir -p release
@@ -41,3 +41,6 @@ $(PLATFORMS):
 
 .PHONY: release
 release: linux darwin
+
+run:
+	go run cmd/qsbackup/main.go -c $(CONF) -debug
