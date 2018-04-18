@@ -59,9 +59,6 @@ func main() {
 		fmt.Printf("Can't setup a logger: %s\n", err)
 		os.Exit(1)
 	}
-	backup := qsbackup.Backup{
-		Logger: logger,
-		Config: conf,
-	}
+	backup := qsbackup.New(conf, logger)
 	backup.Run()
 }
