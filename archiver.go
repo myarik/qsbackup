@@ -12,7 +12,7 @@ import (
 )
 
 type Archiver interface {
-	Archive(src, dest string, logger *logger.Log) error
+	Archive(src, dest string, logger *logger.Log) (string, error)
 }
 
 func getDestPath(src, destPath, fileExt string) string {
@@ -32,14 +32,14 @@ func getDestPath(src, destPath, fileExt string) string {
 
 type zipper struct {}
 
-func (z *zipper) Archive(src, destPath string, logger *logger.Log) error{
+func (z *zipper) Archive(src, destPath string, logger *logger.Log) (string, error){
 	// Formatting the destination path to the file
 	dest := z.getDestPath(src, destPath)
 
 	// Create a file
 	out, err := os.Create(dest)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer out.Close()
 
@@ -69,13 +69,13 @@ func (z *zipper) Archive(src, destPath string, logger *logger.Log) error{
 		if err != nil {
 			return err
 		}
-		logger.Debug(fmt.Sprintf("Zip file: %q", path))
 		return nil
 	})
 	if err != nil {
 		logger.Error(fmt.Sprintf("Can't zip a dir %q: %v\n", src, err))
 	}
-	return nil
+	logger.Debug(fmt.Sprintf("Zipped %s to %s", src, dest))
+	return dest, nil
 }
 
 func (z *zipper) getDestPath(src, destPath string) string {
