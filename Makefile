@@ -24,7 +24,7 @@ _help_:
 
 .PHONY: test
 test:
-	$(GOTEST) -v $(PKGS)
+	$(GOTEST) -v $(PKGS) && go vet && golint
 
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PKG)

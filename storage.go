@@ -12,33 +12,41 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
+// Storage represents type capable to save an archive
 type Storage interface {
 	Save(src string, logger *logger.Log) error
 }
 
+// LocalStorage represents the local storage
 type LocalStorage struct {
 	Archiver Archiver
 	DestPath string
 }
 
+// Save backups a dir and saves it in the dest path
 func (storage *LocalStorage) Save(src string, logger *logger.Log) error {
 	if err := os.MkdirAll(filepath.Dir(storage.DestPath), 0644); err != nil {
 		return err
 	}
-	if _, err := storage.Archiver.Archive(src, storage.DestPath, logger); err != nil {
+	location, err := storage.Archiver.Archive(src, storage.DestPath, logger)
+	if err != nil {
 		logger.Error(fmt.Sprintf("Can't archive the directory %s, %s", src, err))
 		return err
 	}
+	logger.Info(fmt.Sprintf("The directory %s archived to %s\n", src, location))
 	return nil
 }
 
+// AwsStorage represents the AWS storage
 type AwsStorage struct {
 	Archiver     Archiver
-	AccessKeyId  string
+	AccessKeyID  string
 	AccessSecret string
 	Region       string
+	Bucket       string
 }
 
+// Save backups a dir and saves it in the S3
 func (storage *AwsStorage) Save(src string, logger *logger.Log) error {
 	tempDir, err := ioutil.TempDir("", "qsbackup")
 	if err != nil {
@@ -58,7 +66,7 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) error {
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String(storage.Region),
 		Credentials: credentials.NewStaticCredentials(
-			storage.AccessKeyId,
+			storage.AccessKeyID,
 			storage.AccessSecret,
 			""),
 	}))
@@ -74,7 +82,7 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) error {
 	// Upload the file to S3.
 	result, err := uploader.Upload(&s3manager.UploadInput{
 		ACL:    aws.String("private"),
-		Bucket: aws.String("ymbackup"),
+		Bucket: aws.String(storage.Bucket),
 		Key:    aws.String(filepath.Base(archive)),
 		Body:   f,
 	})

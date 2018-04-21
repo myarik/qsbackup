@@ -48,7 +48,7 @@ func main() {
 	}
 	conf, err := qsbackup.ConfigLoad(source)
 	if err != nil {
-		fmt.Printf("%s", err)
+		fmt.Printf("%s\n", err)
 		os.Exit(1)
 	}
 
@@ -59,6 +59,10 @@ func main() {
 		fmt.Printf("Can't setup a logger: %s\n", err)
 		os.Exit(1)
 	}
-	backup := qsbackup.New(conf, logger)
+	backup, err := qsbackup.New(conf, logger)
+	if err != nil {
+		fmt.Printf("Can't create a runner: %s\n", err)
+		os.Exit(1)
+	}
 	backup.Run()
 }

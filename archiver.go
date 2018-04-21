@@ -11,6 +11,7 @@ import (
 	"path"
 )
 
+// Archiver represents type capable of archiving
 type Archiver interface {
 	Archive(src, dest string, logger *logger.Log) (string, error)
 }
@@ -82,4 +83,5 @@ func (z *zipper) getDestPath(src, destPath string) string {
 	return getDestPath(src, destPath, "zip")
 }
 
+// ZIP is an Archiver that zips files.
 var ZIP Archiver = (*zipper)(nil)
