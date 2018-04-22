@@ -1,0 +1,18 @@
+---
+# =================================================================
+# Base Information
+# =================================================================
+name: test_backup
+description: Example backup
+logfile: /var/log/test_backup.log
+# =================================================================
+# Directories
+# =================================================================
+dirs:
+  - name: photo
+    description: Photo
+    path: /Users/username/photo
+
+  - name: documents
+    description: Documents
+    path: /Users/username/documents
