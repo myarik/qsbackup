@@ -9,6 +9,7 @@ import (
 	"io"
 	"time"
 	"path"
+	"strings"
 )
 
 // Archiver represents type capable of archiving
@@ -47,7 +48,7 @@ func (z *zipper) Archive(src, destPath string, logger *logger.Log) (string, erro
 	archiveWriter := zip.NewWriter(out)
 	defer archiveWriter.Close()
 
-	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(src, func(srcPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			logger.Error(fmt.Sprintf("prevent panic by handling failure accessing a path %q: %v\n", src, err))
 			return filepath.SkipDir
@@ -56,13 +57,15 @@ func (z *zipper) Archive(src, destPath string, logger *logger.Log) (string, erro
 			return nil // skip
 		}
 		// Open a file
-		input, err := os.Open(path)
+		input, err := os.Open(srcPath)
 		if err != nil {
 			return err
 		}
 		defer input.Close()
 
-		f, err := archiveWriter.Create(path)
+		archivePath := strings.Replace(srcPath, src, path.Base(src), 1)
+
+		f, err := archiveWriter.Create(archivePath)
 		if err != nil {
 			return err
 		}
