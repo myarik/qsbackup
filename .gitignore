@@ -20,4 +20,4 @@ release/
 
 # Vendor
 vendor/github.com/
-vendor/goland.org/
+vendor/golang.org/
