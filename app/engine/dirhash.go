@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"hash/fnv"
 )
 
 // DirHash calculates an MD5 hash of an entire directory
@@ -28,4 +29,10 @@ func DirHash(path string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
+func DirID(s string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return h.Sum32()
 }

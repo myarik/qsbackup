@@ -15,3 +15,11 @@ func TestDirHash(t *testing.T) {
 	require.Equal(t, hash1a, hash1b, "hash1 and hash1b should be identical")
 	require.NotEqual(t, hash1a, hash2a, "hash1 and hash2 should not be the same")
 }
+
+
+func TestDirID(t *testing.T) {
+	hash1a := DirID("/home/ubuntu/test")
+	require.Equal(t, hash1a, uint32(1319342438), "hash1a is invalid")
+	hash1b := DirID("/home/ubuntu/test2")
+	require.NotEqual(t, hash1a, hash1b, "hash1 and hash2 should not be the same")
+}
