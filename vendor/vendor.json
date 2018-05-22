@@ -177,6 +177,12 @@
 			"revisionTime": "2018-04-10T22:21:59Z"
 		},
 		{
+			"checksumSHA1": "qFaKrhSla38BRAyaGz2UaZvH/Dk=",
+			"path": "github.com/coreos/bbolt",
+			"revision": "af9db2027c98c61ecd8e17caa5bd265792b9b9a2",
+			"revisionTime": "2018-03-18T00:15:26Z"
+		},
+		{
 			"checksumSHA1": "CSPbwbyzqA6sfORicn4HFtIhF/c=",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "8991bc29aa16c548c550c7ff78260e27b9ab7c73",
