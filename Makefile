@@ -6,6 +6,7 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 BINARY_NAME=qsbackup
 MAIN_PKG=github.com/myarik/qsbackup/cmd/qsbackup
+APP_PKG=github.com/myarik/qsbackup/app
 VERSION ?= vlatest
 PLATFORMS := linux darwin
 os = $(word 1, $@)
@@ -24,7 +25,7 @@ _help_:
 
 .PHONY: test
 test:
-	$(GOTEST) -v $(PKGS) && go vet && golint
+	$(GOTEST) -v $(PKGS) && go vet $(APP_PKG) && golint
 
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PKG)

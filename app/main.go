@@ -1,16 +1,17 @@
-package qsbackup
+package app
 
 import (
-	"github.com/myarik/qsbackup/pkg/logger"
 	"sync"
 	"fmt"
+	"github.com/myarik/qsbackup/pkg/logger"
+	"github.com/myarik/qsbackup/app/engine"
 )
 
 // Backup archives dirs and save them in a storage
 type Backup struct {
 	Logger     *logger.Log
 	BackupDirs []string
-	Storage    Storage
+	Storage    engine.Storage
 }
 
 // New creates a new Backup.
@@ -25,13 +26,13 @@ func New(Config *BackupConfig, Logger *logger.Log) (*Backup, error) {
 	}
 	switch Config.Storage.Type {
 	case "local":
-		backup.Storage = &LocalStorage{
-			Archiver: ZIP,
+		backup.Storage = &engine.LocalStorage{
+			Archiver: engine.ZIP,
 			DestPath: Config.Storage.DestPath,
 		}
 	case "aws":
-		backup.Storage = &AwsStorage{
-			Archiver:     ZIP,
+		backup.Storage = &engine.AwsStorage{
+			Archiver:     engine.ZIP,
 			Region:       Config.Storage.AwsRegion,
 			AccessKeyID:  Config.Storage.AwsKey,
 			AccessSecret: Config.Storage.AwsSecret,
@@ -41,6 +42,10 @@ func New(Config *BackupConfig, Logger *logger.Log) (*Backup, error) {
 		return nil, fmt.Errorf("storage type does not support")
 	}
 	return backup, nil
+}
+
+func (backup *Backup) isDirChanged(dirPath string) bool {
+	return true
 }
 
 // Run is runner
@@ -55,7 +60,9 @@ func (b *Backup) Run() error {
 			// Decrement the counter when the goroutine completes.
 			defer wg.Done()
 			limit <- true
-			b.Storage.Save(path, b.Logger)
+			if b.isDirChanged(path) == true {
+				//backupPath, err := b.Storage.Save(path, b.Logger)
+			}
 			<-limit
 		}(backupDir)
 	}

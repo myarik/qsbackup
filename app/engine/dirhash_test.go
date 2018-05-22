@@ -1,4 +1,4 @@
-package qsbackup
+package engine
 
 import (
 	"testing"
@@ -6,11 +6,11 @@ import (
 )
 
 func TestDirHash(t *testing.T) {
-	hash1a, err := DirHash("test/hash1")
+	hash1a, err := DirHash("../../test/testdata/hash1")
 	require.NoError(t, err)
-	hash1b, err := DirHash("test/hash1")
+	hash1b, err := DirHash("../../test/testdata/hash1")
 	require.NoError(t, err)
-	hash2a, err := DirHash("test/hash2")
+	hash2a, err := DirHash("../../test/testdata/hash2")
 	require.NoError(t, err)
 	require.Equal(t, hash1a, hash1b, "hash1 and hash1b should be identical")
 	require.NotEqual(t, hash1a, hash2a, "hash1 and hash2 should not be the same")

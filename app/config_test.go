@@ -1,4 +1,4 @@
-package qsbackup
+package app
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package qsbackup
+package engine
 
 import (
 	"github.com/myarik/qsbackup/pkg/logger"

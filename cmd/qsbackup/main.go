@@ -3,7 +3,7 @@ package main
 import (
 	log "github.com/myarik/qsbackup/pkg/logger"
 	"os"
-	"github.com/myarik/qsbackup"
+	"github.com/myarik/qsbackup/app"
 	"io/ioutil"
 	"fmt"
 	"flag"
@@ -46,7 +46,7 @@ func main() {
 		fmt.Printf("Can't open configuration file: %s\n", cmdOptions.ConfigFile)
 		os.Exit(1)
 	}
-	conf, err := qsbackup.ConfigLoad(source)
+	conf, err := app.ConfigLoad(source)
 	if err != nil {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
@@ -59,7 +59,7 @@ func main() {
 		fmt.Printf("Can't setup a logger: %s\n", err)
 		os.Exit(1)
 	}
-	backup, err := qsbackup.New(conf, logger)
+	backup, err := app.New(conf, logger)
 	if err != nil {
 		fmt.Printf("Can't create a runner: %s\n", err)
 		os.Exit(1)
