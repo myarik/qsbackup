@@ -1,4 +1,4 @@
-package engine
+package store
 
 import (
 	"testing"
@@ -19,7 +19,7 @@ func TestDirHash(t *testing.T) {
 
 func TestDirID(t *testing.T) {
 	hash1a := DirID("/home/ubuntu/test")
-	require.Equal(t, hash1a, uint32(1319342438), "hash1a is invalid")
+	require.Equal(t, hash1a, "1319342438", "hash1a is invalid")
 	hash1b := DirID("/home/ubuntu/test2")
 	require.NotEqual(t, hash1a, hash1b, "hash1 and hash2 should not be the same")
 }

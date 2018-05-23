@@ -1,4 +1,4 @@
-package engine
+package store
 
 import (
 	"crypto/md5"
@@ -31,8 +31,8 @@ func DirHash(path string) (string, error) {
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
-func DirID(s string) uint32 {
+func DirID(s string) string {
 	h := fnv.New32a()
 	h.Write([]byte(s))
-	return h.Sum32()
+	return fmt.Sprint(h.Sum32())
 }
