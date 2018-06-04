@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"encoding/json"
+	"strconv"
+	"bytes"
 )
 
 const dirsBucket = "dirs"
@@ -45,9 +47,10 @@ func NewBoltDB(dbPath string, options bolt.Options, logger *logger.Log) (*BoltDB
 	return &BoltDB{db: db}, nil
 }
 
+// Create a new record
 func (b *BoltDB) Create(dirPath, dirHash, location string) (*DirBackup, error) {
 	record := &DirBackup{
-		ID:         DirID(dirPath),
+		ID:         b.makeID(dirPath),
 		SrcPath:    dirPath,
 		BackupPath: location,
 		Hash:       dirHash,
@@ -70,6 +73,24 @@ func (b *BoltDB) Create(dirPath, dirHash, location string) (*DirBackup, error) {
 	return record, nil
 }
 
+// List returns list of all dir backup
+func (b *BoltDB) List(dirPath string) (list []DirBackup, err error) {
+	err = b.db.View(func(tx *bolt.Tx) error {
+		c := tx.Bucket([]byte(dirsBucket)).Cursor()
+		prefix := []byte(DirID(dirPath))
+		for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+			backup := DirBackup{}
+			if e := json.Unmarshal(v, &backup); e != nil {
+				return errors.Wrap(e, "failed to unmarshal")
+			}
+			list = append(list, backup)
+		}
+		return nil
+	})
+
+	return list, err
+}
+
 func (b *BoltDB) Last() {
 }
 
@@ -80,4 +101,9 @@ func (b *BoltDB) DeleteAll() {
 }
 
 func (b *BoltDB) Count() {
+}
+
+// create a bolt id
+func (b *BoltDB) makeID(dirPath string) string {
+	return fmt.Sprintf("%s:%s", DirID(dirPath), strconv.FormatInt(time.Now().Unix(), 10))
 }

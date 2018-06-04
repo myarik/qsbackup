@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"os"
 	"github.com/stretchr/testify/assert"
+	"strings"
 )
 
 var testDB = "../../test/test-backup.db"
@@ -26,7 +27,29 @@ func TestBoltDB_Create(t *testing.T) {
 	db := prepData()
 	res, err := db.Create("/home/test/", "asdd", "/backup/test.zip")
 	require.NoError(t, err)
-	assert.Equal(t, res.ID, "3359227887")
+	assert.True(t, strings.HasPrefix(res.ID, "3359227887"))
+}
+
+func TestBoltDB_madeID(t *testing.T) {
+	defer os.Remove(testDB)
+	db := prepData()
+	res := db.makeID("/home/test")
+	assert.True(t, strings.HasPrefix(res, "43430298"))
+}
+
+func TestBoltDB_List(t *testing.T) {
+	defer os.Remove(testDB)
+	db := prepData()
+	db.Create("/home/test/", "asdd", "/backup/test.zip")
+	db.Create("/home/test2/", "asdd", "/backup/test.zip")
+	time.Sleep(1 * time.Second)
+	db.Create("/home/test/", "asdd", "/backup/test.zip")
+	res, err := db.List("/home/test/")
+	require.NoError(t, err)
+	assert.Equal(t, len(res), 2)
+	res, err = db.List("/home/test2/")
+	require.NoError(t, err)
+	assert.Equal(t, len(res), 1)
 }
 
 func prepData() *BoltDB{
