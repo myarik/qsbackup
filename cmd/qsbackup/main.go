@@ -22,7 +22,7 @@ var (
 	cmdOptions Options
 )
 
-const defaultVersion = "0.0.1"
+const defaultVersion = "0.0.2"
 
 func init() {
 	flag.StringVar(&cmdOptions.ConfigFile, "config", "", "Path to the config file")
