@@ -7,6 +7,10 @@ import (
 	"io/ioutil"
 	"fmt"
 	"flag"
+	"github.com/myarik/qsbackup/app/engine"
+	"github.com/coreos/bbolt"
+	"time"
+	"github.com/myarik/qsbackup/app/store"
 )
 
 type Options struct {
@@ -51,18 +55,58 @@ func main() {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
 	}
+	// backup dirs
+	var backupDirs []string
+	for _, backupDir := range conf.Dirs {
+		backupDirs = append(backupDirs, backupDir.Path)
+	}
+
+	// setup storage
+	var storage engine.Storage
+	switch conf.Storage.Type {
+	case "local":
+		storage = &engine.LocalStorage{
+			Archiver: engine.ZIP,
+			DestPath: conf.Storage.DestPath,
+		}
+	case "aws":
+		storage = &engine.AwsStorage{
+			Archiver:     engine.ZIP,
+			Region:       conf.Storage.AwsRegion,
+			AccessKeyID:  conf.Storage.AwsKey,
+			AccessSecret: conf.Storage.AwsSecret,
+			Bucket:       conf.Storage.AwsBucket,
+		}
+	default:
+		fmt.Println("storage type does not support")
+		os.Exit(1)
+	}
 
 	// Setup logger
 	logger, err := log.Init(conf.Logfile, cmdOptions.Debug)
 	defer logger.Close()
 	if err != nil {
-		fmt.Printf("Can't setup a logger: %s\n", err)
+		fmt.Printf("can't setup a logger: %s\n", err)
 		os.Exit(1)
 	}
-	backup, err := app.New(conf, logger)
+	// setup boltDb
+	os.MkdirAll(conf.Home, 0755)
+	db, err := store.NewBoltDB(
+		conf.GetDatabasePath(),
+		bolt.Options{Timeout: 30 * time.Second},
+		logger,
+	)
 	if err != nil {
-		fmt.Printf("Can't create a runner: %s\n", err)
+		fmt.Printf("can't create a database: %s\n", err)
 		os.Exit(1)
 	}
-	backup.Run()
+	defer db.Close()
+
+	backup := &app.Backup{
+		Logger:     logger,
+		BackupDirs: backupDirs,
+		Storage:    storage,
+		DB:         db,
+	}
+	backup.Run(conf.Jobs)
 }

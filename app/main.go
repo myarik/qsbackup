@@ -2,9 +2,11 @@ package app
 
 import (
 	"sync"
-	"fmt"
 	"github.com/myarik/qsbackup/pkg/logger"
 	"github.com/myarik/qsbackup/app/engine"
+	"github.com/myarik/qsbackup/app/store"
+	"fmt"
+	"time"
 )
 
 // Backup archives dirs and save them in a storage
@@ -12,58 +14,51 @@ type Backup struct {
 	Logger     *logger.Log
 	BackupDirs []string
 	Storage    engine.Storage
-}
-
-// New creates a new Backup.
-func New(Config *BackupConfig, Logger *logger.Log) (*Backup, error) {
-	var backupDirs []string
-	for _, backupDir := range Config.Dirs {
-		backupDirs = append(backupDirs, backupDir.Path)
-	}
-	backup := &Backup{
-		Logger:     Logger,
-		BackupDirs: backupDirs,
-	}
-	switch Config.Storage.Type {
-	case "local":
-		backup.Storage = &engine.LocalStorage{
-			Archiver: engine.ZIP,
-			DestPath: Config.Storage.DestPath,
-		}
-	case "aws":
-		backup.Storage = &engine.AwsStorage{
-			Archiver:     engine.ZIP,
-			Region:       Config.Storage.AwsRegion,
-			AccessKeyID:  Config.Storage.AwsKey,
-			AccessSecret: Config.Storage.AwsSecret,
-			Bucket:       Config.Storage.AwsBucket,
-		}
-	default:
-		return nil, fmt.Errorf("storage type does not support")
-	}
-	return backup, nil
-}
-
-func (backup *Backup) isDirChanged(dirPath string) bool {
-	return true
+	DB         *store.BoltDB
 }
 
 // Run is runner
-func (b *Backup) Run() error {
+func (b *Backup) Run(jobs int32) error {
 	// TODO Put the limit value to the config
-	limit := make(chan bool, 3)
+	limit := make(chan bool, jobs)
 	var wg sync.WaitGroup
 
 	for _, backupDir := range b.BackupDirs {
 		wg.Add(1)
-		go func(path string) {
-			// Decrement the counter when the goroutine completes.
-			defer wg.Done()
+		go func(dirPath string) {
 			limit <- true
-			if b.isDirChanged(path) == true {
-				//backupPath, err := b.Storage.Save(path, b.Logger)
+			//// Decrement the counter when the goroutine completes.
+			defer func() {
+				<-limit
+				wg.Done()
+			}()
+			lastBackup, err := b.DB.Last(dirPath)
+			if err != nil {
+				b.Logger.Error(
+					fmt.Sprintf("can't get a last backup, for a dir %s: %s\n", dirPath, err))
+				return
 			}
-			<-limit
+			dirHash, err := store.DirHash(dirPath)
+			if err != nil {
+				b.Logger.Error(
+					fmt.Sprintf("can't build a dir hash, for a dir %s: %s\n", dirPath, err))
+				return
+			}
+
+			if lastBackup == nil || lastBackup.Hash != dirHash {
+				backupPath, err := b.Storage.Save(dirPath, b.Logger)
+				if err != nil {
+					return
+				}
+				if _, err := b.DB.Create(dirPath, dirHash, backupPath); err != nil {
+					b.Logger.Error(fmt.Sprintf("can't create a db record: %s\n", err))
+				} else {
+					b.Logger.Info(fmt.Sprintf("%s backup created", dirPath))
+				}
+			} else {
+				b.Logger.Info(fmt.Sprintf("%s has not changed, after %s",
+					dirPath, lastBackup.Timestamp.Format(time.RFC1123)))
+			}
 		}(backupDir)
 	}
 	wg.Wait()

@@ -129,6 +129,10 @@ func (b *BoltDB) Pop(dirPath string) error {
 	return nil
 }
 
+func (b *BoltDB) Close() error {
+	return b.db.Close()
+}
+
 // create a bolt id
 func (b *BoltDB) makeID(dirPath string) string {
 	return DirID(dirPath)

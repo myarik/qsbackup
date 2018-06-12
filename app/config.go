@@ -9,12 +9,13 @@ import (
 
 // BackupConfig represents types capable of read a config file
 type BackupConfig struct {
-	Name        string
-	Description string `yaml:"description,omitempty"`
-	Logfile     string `yaml:"logfile,omitempty"`
-	Home        string `yaml:"home,omitempty"`
-	Storage     BackupStorage
-	Dirs        []Dir  `yaml:"dirs,omitempty"`
+	Name         string
+	Description  string `yaml:"description,omitempty"`
+	Logfile      string `yaml:"logfile,omitempty"`
+	Home         string `yaml:"home,omitempty"`
+	Jobs		 int32 `yaml:"omitempty"`
+	Storage      BackupStorage
+	Dirs         []Dir  `yaml:"dirs,omitempty"`
 }
 
 // Dir represents types capable of read a backup directory path
@@ -77,6 +78,9 @@ func validatedConfig(c *BackupConfig) (*BackupConfig, error) {
 		}
 		c.Home = path.Join(homeDir, ".config/qsbackup")
 	}
+	if c.Jobs == 0 {
+		c.Jobs = 3
+	}
 	return c, nil
 }
 
@@ -88,4 +92,8 @@ func ConfigLoad(input []byte) (*BackupConfig, error) {
 		return nil, fmt.Errorf("can't parse the config file: %v", err)
 	}
 	return validatedConfig(&config)
+}
+
+func (config *BackupConfig) GetDatabasePath() string {
+	return path.Join(config.Home, fmt.Sprintf("%s.db", config.Name))
 }

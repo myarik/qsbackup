@@ -33,7 +33,6 @@ func (storage *LocalStorage) Save(src string, logger *logger.Log) (string, error
 		logger.Error(fmt.Sprintf("Can't archive the directory %s, %s", src, err))
 		return "", err
 	}
-	logger.Info(fmt.Sprintf("The directory %s archived to %s\n", src, location))
 	return location, nil
 }
 
@@ -90,6 +89,5 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) (string, error) 
 		logger.Error(fmt.Sprintf("failed to upload file, %v", err))
 		return "", err
 	}
-	logger.Info(fmt.Sprintf("The directory %s archived and uploaded to, %s\n", src, result.Location))
 	return result.Location, nil
 }
