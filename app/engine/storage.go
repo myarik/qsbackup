@@ -1,4 +1,4 @@
-package qsbackup
+package engine
 
 import (
 	"github.com/myarik/qsbackup/pkg/logger"
@@ -14,7 +14,7 @@ import (
 
 // Storage represents type capable to save an archive
 type Storage interface {
-	Save(src string, logger *logger.Log) error
+	Save(src string, logger *logger.Log) (string, error)
 }
 
 // LocalStorage represents the local storage
@@ -24,17 +24,16 @@ type LocalStorage struct {
 }
 
 // Save backups a dir and saves it in the dest path
-func (storage *LocalStorage) Save(src string, logger *logger.Log) error {
+func (storage *LocalStorage) Save(src string, logger *logger.Log) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(storage.DestPath), 0644); err != nil {
-		return err
+		return "", err
 	}
 	location, err := storage.Archiver.Archive(src, storage.DestPath, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Can't archive the directory %s, %s", src, err))
-		return err
+		return "", err
 	}
-	logger.Info(fmt.Sprintf("The directory %s archived to %s\n", src, location))
-	return nil
+	return location, nil
 }
 
 // AwsStorage represents the AWS storage
@@ -47,11 +46,11 @@ type AwsStorage struct {
 }
 
 // Save backups a dir and saves it in the S3
-func (storage *AwsStorage) Save(src string, logger *logger.Log) error {
+func (storage *AwsStorage) Save(src string, logger *logger.Log) (string, error) {
 	tempDir, err := ioutil.TempDir("", "qsbackup")
 	if err != nil {
 		logger.Error(fmt.Sprintf("Can't create the tmp directory, %s", err))
-		return err
+		return "", err
 	}
 	logger.Debug(fmt.Sprintf("Created the tmp directory, %s", tempDir))
 	defer os.RemoveAll(tempDir)
@@ -59,7 +58,7 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) error {
 	archive, err := storage.Archiver.Archive(src, tempDir, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Can't archive the directory %s, %s", src, err))
-		return err
+		return "", err
 	}
 	logger.Debug(fmt.Sprintf("Archived the %s to %s", src, archive))
 
@@ -75,7 +74,7 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) error {
 	f, err := os.Open(archive)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Can't read a file %s, %v", archive, err))
-		return fmt.Errorf("can't read a file %s, %v", archive, err)
+		return "", fmt.Errorf("can't read a file %s, %v", archive, err)
 	}
 	defer f.Close()
 
@@ -88,8 +87,7 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) error {
 	})
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to upload file, %v", err))
-		return err
+		return "", err
 	}
-	logger.Info(fmt.Sprintf("The directory %s archived and uploaded to, %s\n", src, result.Location))
-	return nil
+	return result.Location, nil
 }

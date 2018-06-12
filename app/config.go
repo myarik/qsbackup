@@ -1,17 +1,21 @@
-package qsbackup
+package app
 
 import (
 	"fmt"
 	"github.com/go-yaml/yaml"
+	"os/user"
+	"path"
 )
 
 // BackupConfig represents types capable of read a config file
 type BackupConfig struct {
-	Name        string
-	Description string `yaml:"description,omitempty"`
-	Logfile     string `yaml:"logfile,omitempty"`
-	Storage     BackupStorage
-	Dirs        []Dir  `yaml:"dirs,omitempty"`
+	Name         string
+	Description  string `yaml:"description,omitempty"`
+	Logfile      string `yaml:"logfile,omitempty"`
+	Home         string `yaml:"home,omitempty"`
+	Jobs		 int32 `yaml:"omitempty"`
+	Storage      BackupStorage
+	Dirs         []Dir  `yaml:"dirs,omitempty"`
 }
 
 // Dir represents types capable of read a backup directory path
@@ -29,6 +33,14 @@ type BackupStorage struct {
 	AwsBucket string `yaml:"aws_bucket,omitempty"`
 	AwsKey    string `yaml:"aws_key,omitempty"`
 	AwsSecret string `yaml:"aws_secret,omitempty"`
+}
+
+func getHomeDir() (string, error) {
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return currentUser.HomeDir, nil
 }
 
 func validatedConfig(c *BackupConfig) (*BackupConfig, error) {
@@ -59,6 +71,16 @@ func validatedConfig(c *BackupConfig) (*BackupConfig, error) {
 	default:
 		return nil, fmt.Errorf("storage type does not support")
 	}
+	if c.Home == "" {
+		homeDir, err := getHomeDir()
+		if err != nil {
+			return nil, fmt.Errorf("can't get the home dir: %v", err)
+		}
+		c.Home = path.Join(homeDir, ".config/qsbackup")
+	}
+	if c.Jobs == 0 {
+		c.Jobs = 3
+	}
 	return c, nil
 }
 
@@ -70,4 +92,8 @@ func ConfigLoad(input []byte) (*BackupConfig, error) {
 		return nil, fmt.Errorf("can't parse the config file: %v", err)
 	}
 	return validatedConfig(&config)
+}
+
+func (config *BackupConfig) GetDatabasePath() string {
+	return path.Join(config.Home, fmt.Sprintf("%s.db", config.Name))
 }
