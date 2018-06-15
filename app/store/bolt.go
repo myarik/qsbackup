@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"encoding/json"
+	"github.com/myarik/qsbackup/app/engine"
 )
 
 const dirsBucket = "dirs"
@@ -17,11 +18,12 @@ type BoltDB struct {
 }
 
 type DirBackup struct {
-	ID         string
-	SrcPath    string
-	BackupPath string
-	Hash       string
-	Timestamp  time.Time
+	ID          string
+	SrcPath     string
+	BackupPath  string
+	ArchiveName string
+	Hash        string
+	Timestamp   time.Time
 }
 
 // Create a botldb store
@@ -46,13 +48,14 @@ func NewBoltDB(dbPath string, options bolt.Options, logger *logger.Log) (*BoltDB
 }
 
 // Create a new record
-func (b *BoltDB) Create(dirPath, dirHash, location string) (*DirBackup, error) {
+func (b *BoltDB) Create(dirPath, dirHash string, archive *engine.Archive) (*DirBackup, error) {
 	record := DirBackup{
-		ID:         b.makeID(dirPath),
-		SrcPath:    dirPath,
-		BackupPath: location,
-		Hash:       dirHash,
-		Timestamp:  time.Now(),
+		ID:          b.makeID(dirPath),
+		SrcPath:     dirPath,
+		BackupPath:  archive.ArchivePath,
+		ArchiveName: archive.ArchiveName,
+		Hash:        dirHash,
+		Timestamp:   time.Now(),
 	}
 	var dirBackups []DirBackup
 

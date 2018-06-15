@@ -14,8 +14,8 @@ import (
 )
 
 type Options struct {
-	ConfigFile     string
-	Debug, Version bool
+	ConfigFile                     string
+	Debug, Version, List, FullList bool
 }
 
 var (
@@ -30,6 +30,8 @@ func init() {
 
 	flag.BoolVar(&cmdOptions.Version, "v", false, "Show the program version")
 	flag.BoolVar(&cmdOptions.Debug, "debug", false, "Debug mode")
+	flag.BoolVar(&cmdOptions.List, "l", false, "List of backups")
+	flag.BoolVar(&cmdOptions.FullList, "lF", false, "List of all backups")
 }
 
 func main() {
@@ -47,7 +49,7 @@ func main() {
 	// Read and validate a config file
 	source, err := ioutil.ReadFile(cmdOptions.ConfigFile)
 	if err != nil {
-		fmt.Printf("Can't open configuration file: %s\n", cmdOptions.ConfigFile)
+		fmt.Printf("Can't open configuration file: %s", cmdOptions.ConfigFile)
 		os.Exit(1)
 	}
 	conf, err := app.ConfigLoad(source)
@@ -75,7 +77,7 @@ func main() {
 			Region:       conf.Storage.AwsRegion,
 			AccessKeyID:  conf.Storage.AwsKey,
 			AccessSecret: conf.Storage.AwsSecret,
-			Bucket:       conf.Storage.AwsBucket,
+			AWSS3Bucket:  conf.Storage.AwsBucket,
 		}
 	default:
 		fmt.Println("storage type does not support")
@@ -102,6 +104,39 @@ func main() {
 	}
 	defer db.Close()
 
+	if cmdOptions.List {
+		for _, item := range backupDirs {
+			lastBackup, err := db.Last(item)
+			if err != nil {
+				fmt.Errorf("can't get a last backup, for a dir %s: %s\n", item, err)
+			}
+			if lastBackup != nil {
+				fmt.Printf("The %s was backuped on %s\n",
+					item, lastBackup.Timestamp.Format(time.RFC1123))
+			} else {
+				fmt.Printf("The %s hasn't backuped yet\n", item)
+			}
+		}
+		os.Exit(0)
+	}
+	if cmdOptions.FullList {
+		for _, item := range backupDirs {
+			listBackups, err := db.List(item)
+			if err != nil {
+				fmt.Errorf("can't get a last backup, for a dir %s: %s\n", item, err)
+			}
+			if len(listBackups) == 0 {
+				fmt.Printf("The %s hasn't backuped yet\n", item)
+			} else {
+				fmt.Printf("The dir %s:\n", item)
+				for _, backupInfo := range listBackups {
+					fmt.Printf("The %s was backuped on %s: %s\n",
+						item, backupInfo.Timestamp.Format(time.RFC1123), backupInfo.BackupPath)
+				}
+			}
+		}
+		os.Exit(0)
+	}
 	backup := &app.Backup{
 		Logger:     logger,
 		BackupDirs: backupDirs,

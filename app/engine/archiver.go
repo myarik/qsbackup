@@ -12,36 +12,40 @@ import (
 	"strings"
 )
 
+type Archive struct {
+	ArchiveName string
+	ArchivePath string
+}
+
 // Archiver represents type capable of archiving
 type Archiver interface {
-	Archive(src, dest string, logger *logger.Log) (string, error)
+	Archive(src, dest string, logger *logger.Log) (*Archive, error)
 }
 
-func getDestPath(src, destPath, fileExt string) string {
+func getDestPath(src, destPath, fileExt string) (string, string) {
 	now := time.Now()
 	dirName := filepath.Base(src)
-	return path.Join(
-		destPath,
-		fmt.Sprintf("%s_%02d_%02d_%d.%s",
-			dirName,
-			now.Day(),
-			now.Month(),
-			now.Year(),
-			fileExt,
-		),
+	archiveName := fmt.Sprintf("%s_%02d_%02d_%d.%s",
+		dirName,
+		now.Day(),
+		now.Month(),
+		now.Year(),
+		fileExt,
 	)
+	return archiveName, path.Join(destPath, archiveName)
 }
 
-type zipper struct {}
+type zipper struct{}
 
-func (z *zipper) Archive(src, destPath string, logger *logger.Log) (string, error){
+func (z *zipper) Archive(src, destPath string, logger *logger.Log) (*Archive, error) {
 	// Formatting the destination path to the file
-	dest := z.getDestPath(src, destPath)
+	archive := &Archive{}
+	archive.ArchiveName, archive.ArchivePath = z.getDestPath(src, destPath)
 
 	// Create a file
-	out, err := os.Create(dest)
+	out, err := os.Create(archive.ArchivePath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer out.Close()
 
@@ -77,12 +81,14 @@ func (z *zipper) Archive(src, destPath string, logger *logger.Log) (string, erro
 	})
 	if err != nil {
 		logger.Error(fmt.Sprintf("Can't zip a dir %q: %v\n", src, err))
+		return nil, err
 	}
-	logger.Debug(fmt.Sprintf("Zipped %s to %s", src, dest))
-	return dest, nil
+	logger.Debug(fmt.Sprintf("Zipped %s to %s", src, archive.ArchivePath))
+	return archive, nil
 }
 
-func (z *zipper) getDestPath(src, destPath string) string {
+// return path & filename
+func (z *zipper) getDestPath(src, destPath string) (string, string) {
 	return getDestPath(src, destPath, "zip")
 }
 

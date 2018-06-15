@@ -10,6 +10,7 @@ import (
 	"os"
 	"github.com/stretchr/testify/assert"
 	"strings"
+	"github.com/myarik/qsbackup/app/engine"
 )
 
 var testDB = "../../test/test-backup.db"
@@ -24,7 +25,8 @@ func TestNewBoltDB(t *testing.T) {
 func TestBoltDB_Create(t *testing.T) {
 	defer os.Remove(testDB)
 	db := prepData()
-	res, err := db.Create("/home/test/", "asdd", "/backup/test.zip")
+	archive := &engine.Archive{"test.zip","/backup/test.zip"}
+	res, err := db.Create("/home/test/", "asdd", archive)
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(res.ID, "3359227887"))
 }
@@ -39,9 +41,10 @@ func TestBoltDB_madeID(t *testing.T) {
 func TestBoltDB_List(t *testing.T) {
 	defer os.Remove(testDB)
 	db := prepData()
-	db.Create("/home/test/", "asdd", "/backup/test.zip")
-	db.Create("/home/test2/", "asdd", "/backup/test.zip")
-	db.Create("/home/test/", "asdd", "/backup/test.zip")
+	archive := &engine.Archive{"test.zip","/backup/test.zip"}
+	db.Create("/home/test/", "asdd", archive)
+	db.Create("/home/test2/", "asdd", archive)
+	db.Create("/home/test/", "asdd", archive)
 	res, err := db.List("/home/test/")
 	require.NoError(t, err)
 	assert.Equal(t, len(res), 2)
@@ -56,8 +59,10 @@ func TestBoltDB_Last(t *testing.T) {
 	res, err := db.Last("/home/test/")
 	assert.Nil(t, res)
 	assert.Nil(t, err)
-	db.Create("/home/test/", "asdd", "/backup/test.zip")
-	db.Create("/home/test/", "asdd", "/backup/test2.zip")
+	archive := &engine.Archive{"test.zip","/backup/test.zip"}
+	db.Create("/home/test/", "asdd", archive)
+	archive2 := &engine.Archive{"test2.zip","/backup/test2.zip"}
+	db.Create("/home/test/", "asdd", archive2)
 	res, _ = db.Last("/home/test/")
 	assert.Equal(t, res.BackupPath, "/backup/test2.zip")
 }
@@ -65,8 +70,10 @@ func TestBoltDB_Last(t *testing.T) {
 func TestBoltDB_Pop(t *testing.T) {
 	defer os.Remove(testDB)
 	db := prepData()
-	db.Create("/home/test/", "asdd", "/backup/test.zip")
-	db.Create("/home/test/", "asdd", "/backup/test2.zip")
+	archive := &engine.Archive{"test.zip","/backup/test.zip"}
+	archive2 := &engine.Archive{"test2.zip","/backup/test2.zip"}
+	db.Create("/home/test/", "asdd", archive)
+	db.Create("/home/test/", "asdd", archive2)
 	db.Pop("/home/test/")
 	res, _ := db.List("/home/test/")
 	assert.Equal(t, len(res), 1)

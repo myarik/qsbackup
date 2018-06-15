@@ -46,13 +46,15 @@ func (b *Backup) Run(jobs int32) error {
 			}
 
 			if lastBackup == nil || lastBackup.Hash != dirHash {
-				backupPath, err := b.Storage.Save(dirPath, b.Logger)
+				archive, err := b.Storage.Save(dirPath, b.Logger)
 				if err != nil {
 					return
 				}
-				if _, err := b.DB.Create(dirPath, dirHash, backupPath); err != nil {
+				if _, err := b.DB.Create(dirPath, dirHash, archive); err != nil {
 					b.Logger.Error(fmt.Sprintf("can't create a db record: %s\n", err))
 				} else {
+					// TODO check if backup gets a limit value
+					//b.storage.Delete(&engine.Archive{lastBackup.ArchiveName, lastBackup.BackupPath}, logger)
 					b.Logger.Info(fmt.Sprintf("%s backup created", dirPath))
 				}
 			} else {

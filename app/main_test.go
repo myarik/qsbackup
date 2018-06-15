@@ -9,12 +9,16 @@ import (
 	"os"
 	"github.com/myarik/qsbackup/app/store"
 	"github.com/stretchr/testify/assert"
+	"github.com/myarik/qsbackup/app/engine"
 )
 
 type testStorage struct{}
 
-func (storage *testStorage) Save(src string, logger *log.Log) (string, error) {
-	return "/tmp/test_path.zip", nil
+func (storage *testStorage) Save(src string, logger *log.Log) (*engine.Archive, error) {
+	return &engine.Archive{"test.zip", "/tmp/test.zip"}, nil
+}
+func (storage *testStorage) Delete(src *engine.Archive, logger *log.Log) (error) {
+	return nil
 }
 
 var testDB = "../test/test-backup.db"
@@ -24,16 +28,16 @@ func TestBackup_Run(t *testing.T) {
 	backup := prepStorage()
 	values, _ := backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 0)
-	backup.Run()
+	backup.Run(1)
 	values, _ = backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 1)
-	backup.Run()
+	backup.Run(1)
 	values, _ = backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 1)
 	tmpFile, _ := ioutil.TempFile("../test/testdata/hash1/", "test")
 	defer os.Remove(tmpFile.Name()) // clean up
 	tmpFile.Write([]byte("Test"))
-	backup.Run()
+	backup.Run(1)
 	values, _ = backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 2)
 }
