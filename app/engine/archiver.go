@@ -25,11 +25,14 @@ type Archiver interface {
 func getDestPath(src, destPath, fileExt string) (string, string) {
 	now := time.Now()
 	dirName := filepath.Base(src)
-	archiveName := fmt.Sprintf("%s_%02d_%02d_%d.%s",
+	archiveName := fmt.Sprintf("%s_%02d_%02d_%d__%02d_%02d_%02d.%s",
 		dirName,
 		now.Day(),
 		now.Month(),
 		now.Year(),
+		now.Hour(),
+		now.Minute(),
+		now.Second(),
 		fileExt,
 	)
 	return archiveName, path.Join(destPath, archiveName)

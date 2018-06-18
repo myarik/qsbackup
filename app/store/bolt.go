@@ -132,6 +132,18 @@ func (b *BoltDB) Pop(dirPath string) error {
 	return nil
 }
 
+// Update a record
+func (b *BoltDB) Update(dirPath string, backups []DirBackup) error {
+	jRecord, err := json.Marshal(&backups)
+	if err != nil {
+		return errors.Wrap(err, "can't marshal a record")
+	}
+	if b.save(b.makeID(dirPath), jRecord) != nil {
+		return errors.Wrap(err, "can't create a record in the db")
+	}
+	return nil
+}
+
 func (b *BoltDB) Close() error {
 	return b.db.Close()
 }
