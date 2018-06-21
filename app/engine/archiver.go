@@ -13,8 +13,8 @@ import (
 )
 
 type Archive struct {
-	ArchiveName string
-	ArchivePath string
+	Name string
+	Path string
 }
 
 // Archiver represents type capable of archiving
@@ -43,10 +43,10 @@ type zipper struct{}
 func (z *zipper) Archive(src, destPath string, logger *logger.Log) (*Archive, error) {
 	// Formatting the destination path to the file
 	archive := &Archive{}
-	archive.ArchiveName, archive.ArchivePath = z.getDestPath(src, destPath)
+	archive.Name, archive.Path = z.getDestPath(src, destPath)
 
 	// Create a file
-	out, err := os.Create(archive.ArchivePath)
+	out, err := os.Create(archive.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (z *zipper) Archive(src, destPath string, logger *logger.Log) (*Archive, er
 		logger.Error(fmt.Sprintf("Can't zip a dir %q: %v\n", src, err))
 		return nil, err
 	}
-	logger.Debug(fmt.Sprintf("Zipped %s to %s", src, archive.ArchivePath))
+	logger.Debug(fmt.Sprintf("Zipped %s to %s", src, archive.Path))
 	return archive, nil
 }
 

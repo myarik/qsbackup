@@ -15,7 +15,7 @@ import (
 type testStorage struct{}
 
 func (storage *testStorage) Save(src string, logger *log.Log) (*engine.Archive, error) {
-	return &engine.Archive{"test.zip", "/tmp/test.zip"}, nil
+	return &engine.Archive{Name: "test.zip", Path: "/tmp/test.zip"}, nil
 }
 func (storage *testStorage) Delete(src *engine.Archive, logger *log.Log) (error) {
 	return nil

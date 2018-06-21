@@ -64,13 +64,13 @@ func (b *Backup) Run(jobs int32) error {
 					return
 				}
 				if len(backups) > numberBackups {
-					for _, oldBackup := range backups[:len(backups)-numberBackups] {
-						oldArchive := &engine.Archive{
-							oldBackup.ArchiveName,
-							oldBackup.BackupPath,
+					for _, item := range backups[:len(backups)-numberBackups] {
+						lastArchive := &engine.Archive{
+							Name: item.ArchiveName,
+							Path: item.BackupPath,
 						}
-						b.Storage.Delete(oldArchive, b.Logger)
-						b.Logger.Info(fmt.Sprintf("%s backup deleted", oldBackup.ArchiveName))
+						b.Storage.Delete(lastArchive, b.Logger)
+						b.Logger.Info(fmt.Sprintf("%s backup deleted", lastArchive.Name))
 					}
 					backups = backups[len(backups)-numberBackups:]
 					b.DB.Update(dirPath, backups)

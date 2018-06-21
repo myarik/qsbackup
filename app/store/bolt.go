@@ -52,8 +52,8 @@ func (b *BoltDB) Create(dirPath, dirHash string, archive *engine.Archive) (*DirB
 	record := DirBackup{
 		ID:          b.makeID(dirPath),
 		SrcPath:     dirPath,
-		BackupPath:  archive.ArchivePath,
-		ArchiveName: archive.ArchiveName,
+		BackupPath:  archive.Path,
+		ArchiveName: archive.Name,
 		Hash:        dirHash,
 		Timestamp:   time.Now(),
 	}

@@ -40,9 +40,9 @@ func (storage *LocalStorage) Save(src string, logger *logger.Log) (*Archive, err
 
 // Delete a file
 func (storage *LocalStorage) Delete(archive *Archive, logger *logger.Log) error {
-	err := os.Remove(archive.ArchivePath)
+	err := os.Remove(archive.Path)
 	if err != nil {
-		logger.Error(fmt.Sprintf("can't delete a file, %s, error: %s", archive.ArchivePath, err))
+		logger.Error(fmt.Sprintf("can't delete a file, %s, error: %s", archive.Path, err))
 	}
 	return err
 }
@@ -74,7 +74,7 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) (*Archive, error
 	logger.Debug(fmt.Sprintf("Archived the %s to %s", src, archive))
 
 	uploader := s3manager.NewUploader(storage.getSession())
-	f, err := os.Open(archive.ArchivePath)
+	f, err := os.Open(archive.Path)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Can't read a file %s, %v", archive, err))
 		return nil, fmt.Errorf("can't read a file %s, %v", archive, err)
@@ -85,14 +85,14 @@ func (storage *AwsStorage) Save(src string, logger *logger.Log) (*Archive, error
 	result, err := uploader.Upload(&s3manager.UploadInput{
 		ACL:    aws.String("private"),
 		Bucket: aws.String(storage.AWSS3Bucket),
-		Key:    aws.String(filepath.Base(archive.ArchivePath)),
+		Key:    aws.String(filepath.Base(archive.Path)),
 		Body:   f,
 	})
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to upload file, %v", err))
 		return nil, err
 	}
-	archive.ArchivePath = result.Location
+	archive.Path = result.Location
 	return archive, nil
 }
 
@@ -102,11 +102,11 @@ func (storage *AwsStorage) Delete(archive *Archive, logger *logger.Log) error {
 
 	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(storage.AWSS3Bucket),
-		Key:    aws.String(archive.ArchiveName),
+		Key:    aws.String(archive.Name),
 	}
 	_, err := svc.DeleteObject(input)
 	if err != nil {
-		logger.Error(fmt.Sprintf("can't delete a file, %s, error: %s", archive.ArchiveName, err))
+		logger.Error(fmt.Sprintf("can't delete a file, %s, error: %s", archive.Name, err))
 	}
 	return err
 }
