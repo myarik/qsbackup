@@ -6,11 +6,11 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 BINARY_NAME=qsbackup
 MAIN_PKG=github.com/myarik/qsbackup/cmd/qsbackup
-APP_PKG=github.com/myarik/qsbackup/app
+APP_PKG=app
 VERSION ?= vlatest
 PLATFORMS := linux darwin
 os = $(word 1, $@)
-CONF ?= /Users/yaroslavmuravskiy/Documents/test_backup/config.yml
+CONF ?= .test_env/config.yml
 
 help: _help_
 
@@ -25,7 +25,7 @@ _help_:
 
 .PHONY: test
 test:
-	$(GOTEST) -v $(PKGS) && go vet $(APP_PKG) && golint
+	$(GOTEST) -v $(PKGS) && gometalinter.v2 --disable-all --enable=vet --enable=vetshadow --enable=golint --exclude=test --exclude=mock $(APP_PKG)/
 
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PKG)
@@ -44,4 +44,4 @@ $(PLATFORMS):
 release: linux darwin
 
 run:
-	go run cmd/qsbackup/main.go -c $(CONF) -debug
+	go run cmd/qsbackup/main.go -c $(CONF) --debug

@@ -9,13 +9,13 @@ import (
 
 // BackupConfig represents types capable of read a config file
 type BackupConfig struct {
-	Name         string
-	Description  string `yaml:"description,omitempty"`
-	Logfile      string `yaml:"logfile,omitempty"`
-	Home         string `yaml:"home,omitempty"`
-	Jobs		 int32 `yaml:"omitempty"`
-	Storage      BackupStorage
-	Dirs         []Dir  `yaml:"dirs,omitempty"`
+	Name        string
+	Description string `yaml:"description,omitempty"`
+	Logfile     string `yaml:"logfile,omitempty"`
+	Home        string `yaml:"home,omitempty"`
+	Jobs        int32  `yaml:"omitempty"`
+	Storage     BackupStorage
+	Dirs        []Dir  `yaml:"dirs,omitempty"`
 }
 
 // Dir represents types capable of read a backup directory path
@@ -94,6 +94,7 @@ func ConfigLoad(input []byte) (*BackupConfig, error) {
 	return validatedConfig(&config)
 }
 
+// GetDatabasePath returns a path to the database
 func (config *BackupConfig) GetDatabasePath() string {
 	return path.Join(config.Home, fmt.Sprintf("%s.db", config.Name))
 }

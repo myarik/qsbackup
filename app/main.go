@@ -53,7 +53,7 @@ func (b *Backup) Run(jobs int32) error {
 				if err != nil {
 					return
 				}
-				if _, err := b.DB.Create(dirPath, dirHash, archive); err != nil {
+				if _, err = b.DB.Create(dirPath, dirHash, archive); err != nil {
 					b.Logger.Error(fmt.Sprintf("can't create a db record: %s\n", err))
 					return
 				}
@@ -84,4 +84,41 @@ func (b *Backup) Run(jobs int32) error {
 	wg.Wait()
 
 	return nil
+}
+
+// ShowLastBackups returns a dir's last backup
+func (b *Backup) ShowLastBackups() {
+	for _, item := range b.BackupDirs {
+		lastBackup, err := b.DB.Last(item)
+		if err != nil {
+			b.Logger.Error(fmt.Sprintf("can't get a last backup, for a dir %s: %s", item, err))
+			return
+		}
+		if lastBackup != nil {
+			fmt.Printf("The %s was backuped on %s\n",
+				item, lastBackup.Timestamp.Format(time.RFC1123))
+		} else {
+			fmt.Printf("The %s hasn't backuped yet\n", item)
+		}
+	}
+}
+
+// AllBackups returns a dir backups
+func (b *Backup) AllBackups() {
+	for _, item := range b.BackupDirs {
+		listBackups, err := b.DB.List(item)
+		if err != nil {
+			b.Logger.Error(fmt.Sprintf("can't get a last backup, for a dir %s: %s", item, err))
+			return
+		}
+		if len(listBackups) == 0 {
+			fmt.Printf("The %s hasn't backuped yet\n", item)
+		} else {
+			fmt.Printf("The dir %s:\n", item)
+			for _, backupInfo := range listBackups {
+				fmt.Printf("The %s was backuped on %s: %s\n",
+					item, backupInfo.Timestamp.Format(time.RFC1123), backupInfo.BackupPath)
+			}
+		}
+	}
 }

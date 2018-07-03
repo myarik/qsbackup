@@ -19,5 +19,7 @@
 release/
 
 # Vendor
-vendor/github.com/
-vendor/golang.org/
+vendor/
+
+# Test
+.test_env/

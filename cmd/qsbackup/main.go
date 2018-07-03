@@ -1,55 +1,48 @@
 package main
 
 import (
-	log "github.com/myarik/qsbackup/pkg/logger"
+	"github.com/jessevdk/go-flags"
 	"os"
-	"github.com/myarik/qsbackup/app"
-	"io/ioutil"
 	"fmt"
-	"flag"
+	"io/ioutil"
+	"github.com/myarik/qsbackup/app"
 	"github.com/myarik/qsbackup/app/engine"
+	"github.com/myarik/qsbackup/app/store"
 	"github.com/coreos/bbolt"
 	"time"
-	"github.com/myarik/qsbackup/app/store"
+	"github.com/myarik/qsbackup/pkg/logger"
 )
 
-type Options struct {
-	ConfigFile                     string
-	Debug, Version, List, FullList bool
-}
+const defaultVersion = "0.0.3"
 
-var (
-	cmdOptions Options
-)
-
-const defaultVersion = "0.0.2"
-
-func init() {
-	flag.StringVar(&cmdOptions.ConfigFile, "config", "", "Path to the config file")
-	flag.StringVar(&cmdOptions.ConfigFile, "c", "", "Path to the config file")
-
-	flag.BoolVar(&cmdOptions.Version, "v", false, "Show the program version")
-	flag.BoolVar(&cmdOptions.Debug, "debug", false, "Debug mode")
-	flag.BoolVar(&cmdOptions.List, "l", false, "List of backups")
-	flag.BoolVar(&cmdOptions.FullList, "lF", false, "List of all backups")
+// Opts with command line flags and env
+// nolint:maligned
+type Opts struct {
+	ConfigFile string `short:"c" long:"config" default:"/usr/local/etc/qsbackup.conf" description:"config file"`
+	Version    func() `short:"v" long:"version" description:"version"`
+	Show       bool   `short:"s" long:"show" description:"all backups"`
+	Last       bool   `short:"l" long:"last" description:"last backups"`
+	Debug      bool   `long:"debug" description:"debugger on"`
 }
 
 func main() {
 	// Parse the CommandLine
-	flag.Parse()
-	if cmdOptions.Version == true {
-		fmt.Printf("Version %s\n", defaultVersion)
+	var opts Opts
+
+	opts.Version = func() {
+		fmt.Println(defaultVersion)
 		os.Exit(0)
 	}
-	if cmdOptions.ConfigFile == "" {
-		flag.PrintDefaults()
+
+	p := flags.NewParser(&opts, flags.Default)
+	if _, e := p.ParseArgs(os.Args[1:]); e != nil {
 		os.Exit(1)
 	}
 
 	// Read and validate a config file
-	source, err := ioutil.ReadFile(cmdOptions.ConfigFile)
+	source, err := ioutil.ReadFile(opts.ConfigFile)
 	if err != nil {
-		fmt.Printf("Can't open configuration file: %s", cmdOptions.ConfigFile)
+		fmt.Printf("Can't open configuration file: %s\n", opts.ConfigFile)
 		os.Exit(1)
 	}
 	conf, err := app.ConfigLoad(source)
@@ -85,8 +78,8 @@ func main() {
 	}
 
 	// Setup logger
-	logger, err := log.Init(conf.Logfile, cmdOptions.Debug)
-	defer logger.Close()
+	appLogger, err := logger.Init(conf.Logfile, opts.Debug)
+	defer appLogger.Close()
 	if err != nil {
 		fmt.Printf("can't setup a logger: %s\n", err)
 		os.Exit(1)
@@ -96,7 +89,7 @@ func main() {
 	db, err := store.NewBoltDB(
 		conf.GetDatabasePath(),
 		bolt.Options{Timeout: 30 * time.Second},
-		logger,
+		appLogger,
 	)
 	if err != nil {
 		fmt.Printf("can't create a database: %s\n", err)
@@ -104,44 +97,21 @@ func main() {
 	}
 	defer db.Close()
 
-	if cmdOptions.List {
-		for _, item := range backupDirs {
-			lastBackup, err := db.Last(item)
-			if err != nil {
-				fmt.Errorf("can't get a last backup, for a dir %s: %s\n", item, err)
-			}
-			if lastBackup != nil {
-				fmt.Printf("The %s was backuped on %s\n",
-					item, lastBackup.Timestamp.Format(time.RFC1123))
-			} else {
-				fmt.Printf("The %s hasn't backuped yet\n", item)
-			}
-		}
-		os.Exit(0)
-	}
-	if cmdOptions.FullList {
-		for _, item := range backupDirs {
-			listBackups, err := db.List(item)
-			if err != nil {
-				fmt.Errorf("can't get a last backup, for a dir %s: %s\n", item, err)
-			}
-			if len(listBackups) == 0 {
-				fmt.Printf("The %s hasn't backuped yet\n", item)
-			} else {
-				fmt.Printf("The dir %s:\n", item)
-				for _, backupInfo := range listBackups {
-					fmt.Printf("The %s was backuped on %s: %s\n",
-						item, backupInfo.Timestamp.Format(time.RFC1123), backupInfo.BackupPath)
-				}
-			}
-		}
-		os.Exit(0)
-	}
+	// init a backup object
 	backup := &app.Backup{
-		Logger:     logger,
+		Logger:     appLogger,
 		BackupDirs: backupDirs,
 		Storage:    storage,
 		DB:         db,
 	}
-	backup.Run(conf.Jobs)
+
+	if opts.Last {
+		backup.ShowLastBackups()
+		os.Exit(0)
+	} else if opts.Show {
+		backup.AllBackups()
+		os.Exit(0)
+	} else {
+		backup.Run(conf.Jobs)
+	}
 }
