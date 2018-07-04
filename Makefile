@@ -25,7 +25,9 @@ _help_:
 
 .PHONY: test
 test:
-	$(GOTEST) -v $(PKGS) && gometalinter.v2 --disable-all --enable=vet --enable=vetshadow --enable=golint --exclude=test --exclude=mock $(APP_PKG)/
+	$(GOTEST) -v $(PKGS) && gometalinter.v2 --disable-all --enable=vet --enable=vetshadow --enable=golint  \
+	        --enable=staticcheck --enable=ineffassign --enable=goconst --enable=errcheck --enable=unconvert \
+            --enable=deadcode  --enable=gosimple --enable=gas --exclude=test --exclude=mock $(APP_PKG)/
 
 build:
 	$(GOBUILD) -o $(BINARY_NAME) -v $(MAIN_PKG)

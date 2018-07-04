@@ -69,11 +69,21 @@ func (b *Backup) Run(jobs int32) error {
 							Name: item.ArchiveName,
 							Path: item.BackupPath,
 						}
-						b.Storage.Delete(lastArchive, b.Logger)
+						err = b.Storage.Delete(lastArchive, b.Logger)
+						if err != nil {
+							b.Logger.Error(
+								fmt.Sprintf("can't delete the archive %s: %s\n", lastArchive.Name, err))
+							return
+						}
 						b.Logger.Info(fmt.Sprintf("%s backup deleted", lastArchive.Name))
 					}
 					backups = backups[len(backups)-numberBackups:]
-					b.DB.Update(dirPath, backups)
+					err = b.DB.Update(dirPath, backups)
+					if err != nil {
+						b.Logger.Error(
+							fmt.Sprintf("can't update the db record %s: %s\n", dirPath, err))
+						return
+					}
 				}
 			} else {
 				b.Logger.Info(fmt.Sprintf("%s has not changed, after %s",
