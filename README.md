@@ -35,5 +35,7 @@ dirs:
   2. Run the program
 
 **Extra commands:**
+
 Last backups: `/usr/local/sbin/qsbackup -c /usr/local/etc/qsbackup.conf -l`
+
 All backups: `/usr/local/sbin/qsbackup -c /usr/local/etc/qsbackup.conf -s`
