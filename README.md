@@ -1,4 +1,4 @@
-#Qbackup
+# Qbackup
 
 QB allows to backup files to the Amazon S3 cloud storage. QB minimize a storage space as it backups only a directory which has changes. Also, it allows specifying how many copies you want to store.
 
