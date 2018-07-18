@@ -63,6 +63,16 @@ func (z *zipper) Archive(src, destPath string, logger *logger.Log) (*Archive, er
 		if info.IsDir() {
 			return nil // skip
 		}
+
+		// Skip a symlink
+		fi, err := os.Lstat(srcPath)
+		if err != nil {
+			return nil
+		}
+		if fi.Mode()&os.ModeSymlink != 0 {
+			return nil
+		}
+
 		// Open a file
 		input, err := os.Open(srcPath)
 		if err != nil {

@@ -21,79 +21,100 @@ type Backup struct {
 	DB         *store.BoltDB
 }
 
-// Run is runner
-func (b *Backup) Run(jobs int32) error {
-	limit := make(chan bool, jobs)
-	var wg sync.WaitGroup
+// backupDir creates a dir backup
+func (b *Backup) backupDir(dirPath string) {
 
-	for _, backupDir := range b.BackupDirs {
-		wg.Add(1)
-		go func(dirPath string) {
-			limit <- true
-			//// Decrement the counter when the goroutine completes.
-			defer func() {
-				<-limit
-				wg.Done()
-			}()
-			lastBackup, err := b.DB.Last(dirPath)
-			if err != nil {
-				b.Logger.Error(
-					fmt.Sprintf("can't get a last backup, for a dir %s: %s\n", dirPath, err))
-				return
-			}
-			dirHash, err := store.DirHash(dirPath)
-			if err != nil {
-				b.Logger.Error(
-					fmt.Sprintf("can't build a dir hash, for a dir %s: %s\n", dirPath, err))
-				return
-			}
-			// TODO bug if backup runs in the same day
-			if lastBackup == nil || lastBackup.Hash != dirHash {
-				archive, err := b.Storage.Save(dirPath, b.Logger)
-				if err != nil {
-					return
-				}
-				if _, err = b.DB.Create(dirPath, dirHash, archive); err != nil {
-					b.Logger.Error(fmt.Sprintf("can't create a db record: %s\n", err))
-					return
-				}
-				b.Logger.Info(fmt.Sprintf("%s backup created", dirPath))
-				backups, err := b.DB.List(dirPath)
-				if err != nil {
-					b.Logger.Error(fmt.Sprintf("can't get a db record: %s\n", err))
-					return
-				}
-				if len(backups) > numberBackups {
-					for _, item := range backups[:len(backups)-numberBackups] {
-						lastArchive := &engine.Archive{
-							Name: item.ArchiveName,
-							Path: item.BackupPath,
-						}
-						err = b.Storage.Delete(lastArchive, b.Logger)
-						if err != nil {
-							b.Logger.Error(
-								fmt.Sprintf("can't delete the archive %s: %s\n", lastArchive.Name, err))
-							return
-						}
-						b.Logger.Info(fmt.Sprintf("%s backup deleted", lastArchive.Name))
-					}
-					backups = backups[len(backups)-numberBackups:]
-					err = b.DB.Update(dirPath, backups)
-					if err != nil {
-						b.Logger.Error(
-							fmt.Sprintf("can't update the db record %s: %s\n", dirPath, err))
-						return
-					}
-				}
-			} else {
-				b.Logger.Info(fmt.Sprintf("%s has not changed, after %s",
-					dirPath, lastBackup.Timestamp.Format(time.RFC1123)))
-			}
-		}(backupDir)
+	lastBackup, err := b.DB.Last(dirPath)
+	if err != nil {
+		b.Logger.Error(
+			fmt.Sprintf("can't get a last backup, for a dir %s: %s\n", dirPath, err))
+		return
 	}
-	wg.Wait()
+	// Create a dir hash
+	dirHash, err := store.DirHash(dirPath)
+	if err != nil {
+		b.Logger.Error(
+			fmt.Sprintf("can't build a dir hash, for a dir %s: %s\n", dirPath, err))
+		return
+	}
 
-	return nil
+	if lastBackup == nil || lastBackup.Hash != dirHash {
+		// Create a backup
+		archive, err := b.Storage.Save(dirPath, b.Logger)
+		if err != nil {
+			return
+		}
+		// Create a db record
+		if _, err = b.DB.Create(dirPath, dirHash, archive); err != nil {
+			b.Logger.Error(fmt.Sprintf("can't create a db record: %s\n", err))
+			return
+		}
+
+		b.Logger.Info(fmt.Sprintf("%s backup created", dirPath))
+		backups, err := b.DB.List(dirPath)
+		if err != nil {
+			b.Logger.Error(fmt.Sprintf("can't get a db record: %s\n", err))
+			return
+		}
+
+		// Remove old files if we have more than 4 copies
+		if len(backups) > numberBackups {
+			for _, item := range backups[:len(backups)-numberBackups] {
+				lastArchive := &engine.Archive{
+					Name: item.ArchiveName,
+					Path: item.BackupPath,
+				}
+				err = b.Storage.Delete(lastArchive, b.Logger)
+				if err != nil {
+					b.Logger.Error(
+						fmt.Sprintf("can't delete the archive %s: %s\n", lastArchive.Name, err))
+					return
+				}
+				b.Logger.Info(fmt.Sprintf("%s backup deleted", lastArchive.Name))
+			}
+			backups = backups[len(backups)-numberBackups:]
+			err = b.DB.Update(dirPath, backups)
+			if err != nil {
+				b.Logger.Error(
+					fmt.Sprintf("can't update the db record %s: %s\n", dirPath, err))
+				return
+			}
+		}
+	} else {
+		b.Logger.Info(fmt.Sprintf("%s has not changed, after %s",
+			dirPath, lastBackup.Timestamp.Format(time.RFC1123)))
+	}
+}
+
+// Run is runner
+func (b *Backup) Run(jobs int32, cancelChan <-chan struct{}) (<-chan struct{}, error) {
+	taskStopChan := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			taskStopChan <- struct{}{}
+		}()
+		limit := make(chan bool, jobs)
+		var wg sync.WaitGroup
+
+		for _, backupDir := range b.BackupDirs {
+			wg.Add(1)
+			go func(dirPath string) {
+				limit <- true
+				defer func() {
+					<-limit
+					wg.Done()
+				}()
+				select {
+				case <-cancelChan:
+					b.Logger.Warning(fmt.Sprintf("%s was canceled\n", dirPath))
+				default:
+					b.backupDir(dirPath)
+				}
+			}(backupDir)
+		}
+		wg.Wait()
+	}()
+	return taskStopChan, nil
 }
 
 // ShowLastBackups returns a dir's last backup

@@ -25,19 +25,23 @@ var testDB = "../test/test-backup.db"
 
 func TestBackup_Run(t *testing.T) {
 	defer os.Remove(testDB)
+	cancelChan := make(chan struct{}, 1)
 	backup := prepStorage()
 	values, _ := backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 0)
-	backup.Run(1)
+	worker, _ := backup.Run(1, cancelChan)
+	<-worker
 	values, _ = backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 1)
-	backup.Run(1)
+	worker, _ = backup.Run(1, cancelChan)
+	<-worker
 	values, _ = backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 1)
 	tmpFile, _ := ioutil.TempFile("../test/testdata/hash1/", "test")
 	defer os.Remove(tmpFile.Name()) // clean up
 	tmpFile.Write([]byte("Test"))
-	backup.Run(1)
+	worker, _ = backup.Run(1, cancelChan)
+	<-worker
 	values, _ = backup.DB.List("../test/testdata/hash1")
 	assert.Equal(t, len(values), 2)
 }

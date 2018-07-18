@@ -11,6 +11,8 @@ import (
 	"github.com/coreos/bbolt"
 	"time"
 	"github.com/myarik/qsbackup/pkg/logger"
+	"os/signal"
+	"syscall"
 )
 
 const defaultVersion = "0.0.3"
@@ -112,6 +114,29 @@ func main() {
 		backup.AllBackups()
 		os.Exit(0)
 	} else {
-		backup.Run(conf.Jobs)
+		cancelChan := make(chan struct{}, 1)
+		printChan := make(chan struct{}, 1)
+		signalChan := make(chan os.Signal, 1)
+		go func() {
+			<-signalChan
+			close(cancelChan)
+			fmt.Print("Canceling .")
+			for {
+				select {
+				case <-printChan:
+					return
+				default:
+					time.Sleep(time.Second * 1)
+					fmt.Print(".")
+				}
+			}
+		}()
+		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+		stopTask, err := backup.Run(conf.Jobs, cancelChan)
+		if err != nil {
+			os.Exit(1)
+		}
+		<-stopTask
+		close(printChan)
 	}
 }
